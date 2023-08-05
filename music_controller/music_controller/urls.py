@@ -20,5 +20,6 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')), #targetting backend api
-    path('', include('frontend.urls')) #targetting frontend
+    path('', include('frontend.urls')), #targetting frontend
+    path('spotify/', include('spotify.urls')) #targetting spotify
 ]

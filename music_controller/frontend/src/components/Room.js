@@ -9,15 +9,15 @@ export default function Room(props) {
   const [guestCanPause, setGuestCanPause] = useState();
   const [isHost, setIsHost] = useState();
   const [showSetting, setShowSetting] = useState();
+  const [spotifyAuthenticated, setSpotifyAuthenticated] = useState(false);
   const params = useParams();
   const history = useNavigate();
 
   useEffect(() => {
-    getRoomDetails()
+    getRoomDetails();
   }, []);
-  function getRoomDetails() {
-    console.log('room deatil fetching')
-    fetch("/api/get-room" + "?code=" + params.roomCode)
+  async function getRoomDetails() {
+    await fetch("/api/get-room" + "?code=" + params.roomCode)
       .then((res) => {
         if (!res.ok) {
           props.leaveRoomCallback();
@@ -29,6 +29,9 @@ export default function Room(props) {
         setGuestCanPause(data.guest_can_pause);
         setVote(data.votes_to_skip);
         setIsHost(data.is_host);
+        if (data.is_host) {
+          authenticateSpotify();
+        }
       });
   }
   function leaveButtonPressed() {
@@ -59,6 +62,21 @@ export default function Room(props) {
       </Grid>
     );
   }
+  function authenticateSpotify() {
+    fetch("/spotify/is-authenticated")
+      .then((res) => res.json())
+      .then((data) => {
+        setSpotifyAuthenticated(data.status);
+        console.log(data.status);
+        if (!data.status) {
+          fetch("/spotify/get-auth-url")
+            .then((res) => res.json())
+            .then((data) => {
+              window.location.replace(data.url);
+            });
+        }
+      });
+  }
   function renderSettingDiv() {
     return (
       <Grid container spacing={1}>
@@ -68,7 +86,7 @@ export default function Room(props) {
             votesToSkip={voteToSkip}
             guestCanPause={guestCanPause}
             roomCode={params.roomCode}
-            updateCallback={getRoomDetails()}
+            updateCallback={getRoomDetails}
           />
         </Grid>
         <Grid item xs={12} align="center">
