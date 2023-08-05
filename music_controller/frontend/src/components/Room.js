@@ -3,18 +3,25 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { Grid, Button, Typography } from "@material-ui/core";
 import HomePage from "./HomePage";
 import CreateRoomPage from "./CreateRoomPage";
+import MusicPlayer from "./MusicPlayer";
 
 export default function Room(props) {
   const [voteToSkip, setVote] = useState();
   const [guestCanPause, setGuestCanPause] = useState();
   const [isHost, setIsHost] = useState();
   const [showSetting, setShowSetting] = useState();
+  const [song, setSong] = useState({});
   const [spotifyAuthenticated, setSpotifyAuthenticated] = useState(false);
   const params = useParams();
   const history = useNavigate();
 
   useEffect(() => {
     getRoomDetails();
+    getCurrentSong();
+    const interval = setInterval(getCurrentSong, 1000);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
   async function getRoomDetails() {
     await fetch("/api/get-room" + "?code=" + params.roomCode)
@@ -33,6 +40,16 @@ export default function Room(props) {
           authenticateSpotify();
         }
       });
+  }
+
+  async function getCurrentSong() {
+    const res = await fetch("/spotify/current-song");
+    if (!res.ok) {
+      console.log('bad res')
+      return {};
+    }
+    const json = await res.json()
+    setSong(json)
   }
   function leaveButtonPressed() {
     const requestOptions = {
@@ -67,7 +84,6 @@ export default function Room(props) {
       .then((res) => res.json())
       .then((data) => {
         setSpotifyAuthenticated(data.status);
-        console.log(data.status);
         if (!data.status) {
           fetch("/spotify/get-auth-url")
             .then((res) => res.json())
@@ -111,21 +127,7 @@ export default function Room(props) {
           Code: {params.roomCode}
         </Typography>
       </Grid>
-      <Grid item xs={12} align="center">
-        <Typography variant="h4" component="h4">
-          Votes: {voteToSkip}
-        </Typography>
-      </Grid>
-      <Grid item xs={12} align="center">
-        <Typography variant="h4" component="h4">
-          Guest can Pause: {guestCanPause ? guestCanPause.toString() : ""}
-        </Typography>
-      </Grid>
-      <Grid item xs={12} align="center">
-        <Typography variant="h4" component="h4">
-          Host: {isHost ? isHost.toString() : ""}
-        </Typography>
-      </Grid>
+      <MusicPlayer song={song} />
       {isHost ? renderSettingButton() : null}
       <Grid item xs={12} align="center">
         <Button
