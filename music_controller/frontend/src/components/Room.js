@@ -1,6 +1,6 @@
 import React, { Component, useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Grid, Button, Typography } from "@material-ui/core";
+import { Grid, Button, Typography, Avatar } from "@material-ui/core";
 import HomePage from "./HomePage";
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
@@ -11,6 +11,8 @@ export default function Room(props) {
   const [isHost, setIsHost] = useState();
   const [showSetting, setShowSetting] = useState();
   const [song, setSong] = useState({});
+  const [users, setUsers] = useState({});
+  const [curUser, setCurUser] = useState({});
   const [spotifyAuthenticated, setSpotifyAuthenticated] = useState(false);
   const params = useParams();
   const history = useNavigate();
@@ -18,6 +20,8 @@ export default function Room(props) {
   useEffect(() => {
     getRoomDetails();
     getCurrentSong();
+    getCurrentUser();
+    // getUsers();
     const interval = setInterval(getCurrentSong, 1000);
     return () => {
       clearInterval(interval);
@@ -41,15 +45,33 @@ export default function Room(props) {
         }
       });
   }
+  async function getUsers() {
+    const res = await fetch("/spotify/get-users");
+    if (!res.ok) {
+      console.log("bad res");
+      return {};
+    }
+    const json = await res.json();
+    getUsers(json);
+  }
+  async function getCurrentUser() {
+    const res = await fetch("/spotify/current-user");
+    if (!res.ok) {
+      console.log("bad res");
+      return {};
+    }
+    const json = await res.json();
+    setCurUser(json);
+  }
 
   async function getCurrentSong() {
     const res = await fetch("/spotify/current-song");
     if (!res.ok) {
-      console.log('bad res')
+      console.log("bad res");
       return {};
     }
-    const json = await res.json()
-    setSong(json)
+    const json = await res.json();
+    setSong(json);
   }
   function leaveButtonPressed() {
     const requestOptions = {
@@ -89,6 +111,7 @@ export default function Room(props) {
             .then((res) => res.json())
             .then((data) => {
               window.location.replace(data.url);
+              console.log(data);
             });
         }
       });
@@ -123,20 +146,30 @@ export default function Room(props) {
   return (
     <Grid>
       <Grid item xs={12} align="center">
-        <Typography variant="h4" component="h4">
-          Code: {params.roomCode}
+        <Avatar alt={curUser.name} src={curUser.profile_pic} />
+        <Typography variant="h6" component="h6">
+          {curUser.display_name}
         </Typography>
       </Grid>
-      <MusicPlayer song={song} />
-      {isHost ? renderSettingButton() : null}
-      <Grid item xs={12} align="center">
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={leaveButtonPressed}
-        >
-          Leave Room
-        </Button>
+      <Grid container style={{position:'absolute', bottom:'0px'}}>
+        <Grid xs={10}>
+          <MusicPlayer song={song} />
+        </Grid>
+        <Grid xs={2} align='center'>
+          <Typography variant="h6" component="h6">
+            {params.roomCode}
+          </Typography>
+          {isHost ? renderSettingButton() : null}
+          <Grid item xs={12} align="center">
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={leaveButtonPressed}
+            >
+              Leave Room
+            </Button>
+          </Grid>
+        </Grid>
       </Grid>
     </Grid>
   );

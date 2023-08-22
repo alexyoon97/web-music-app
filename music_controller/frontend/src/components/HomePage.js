@@ -1,8 +1,26 @@
-import React, { Component } from "react";
+import React, { Component, useEffect } from "react";
 import { Grid, Button, ButtonGroup, Typography } from "@material-ui/core";
 import { Link } from 'react-router-dom'
 
 export default function HomePage() {
+  function authenticateSpotify() {
+    fetch("/spotify/is-authenticated")
+      .then((res) => res.json())
+      .then((data) => {
+        setSpotifyAuthenticated(data.status);
+        if (!data.status) {
+          fetch("/spotify/get-auth-url")
+            .then((res) => res.json())
+            .then((data) => {
+              window.location.replace(data.url);
+              console.log(data)
+            });
+        }
+      });
+  }
+  useEffect(()=>{
+    authenticateSpotify();
+  },[])
   return (
     <Grid container spacing={3}>
       <Grid item xs={12} align="center">
